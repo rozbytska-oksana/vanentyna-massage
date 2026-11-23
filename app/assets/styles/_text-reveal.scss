@@ -1,0 +1,26 @@
+.text-reveal {
+  &--intro {
+    @media (prefers-reduced-motion: no-preference) {
+      animation: text-reveal-enter var(--text-reveal-duration) var(--text-reveal-easing) backwards;
+      animation-delay: var(--text-reveal-delay, 0ms);
+    }
+
+    &:focus-within {
+      // Фокус переважає keyframes без перезапуску анімації після blur.
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+}
+
+@keyframes text-reveal-enter {
+  from {
+    opacity: 0;
+    transform: translateY(var(--text-reveal-distance));
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}

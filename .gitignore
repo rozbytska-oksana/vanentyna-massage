@@ -1,0 +1,19 @@
+node_modules/
+.nuxt/
+.output/
+# dist — локальний симлінк на .output/public (не папка), тому без скісної риски.
+dist
+coverage/
+playwright-report/
+test-results/
+.env
+.env.*
+!.env.example
+.DS_Store
+*.log
+
+# Оригінали медіа (фото, скани, AI-майстри) не публікуються в репозиторії: зберігайте їх окремо.
+# У Git лишаються тільки README з описом джерел; похідні для сайту лежать у public/images.
+/assets-originals/**
+!/assets-originals/**/
+!/assets-originals/**/README.md

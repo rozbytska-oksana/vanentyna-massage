@@ -1,0 +1,51 @@
+// Текстові посилання й кнопки-посилання: за замовчуванням без підкреслення, тонка лінія
+// плавно виростає зліва направо при наведенні або клавіатурному фокусі.
+
+@mixin underline-line {
+  padding-bottom: 0.15em;
+  background: linear-gradient(currentColor, currentColor) left bottom / 0 1px no-repeat;
+  text-decoration: none;
+  transition: background-size 400ms var(--menu-easing, ease);
+
+  @media (prefers-reduced-motion: reduce) {
+    transition: none;
+  }
+}
+
+@mixin underline-active {
+  background-size: 100% 1px;
+}
+
+// Посилання лише з текстом.
+@mixin hover-underline {
+  @include underline-line;
+
+  @media (hover: hover) {
+    &:hover {
+      @include underline-active;
+    }
+  }
+
+  &:focus-visible {
+    @include underline-active;
+  }
+}
+
+// Посилання з іконкою: лінія лише під текстом ($target), спрацьовує від усього посилання.
+@mixin hover-underline-text($target: 'span') {
+  text-decoration: none;
+
+  #{$target} {
+    @include underline-line;
+  }
+
+  @media (hover: hover) {
+    &:hover #{$target} {
+      @include underline-active;
+    }
+  }
+
+  &:focus-visible #{$target} {
+    @include underline-active;
+  }
+}
