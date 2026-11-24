@@ -62,6 +62,11 @@ NUXT_APP_BASE_URL=/valentyna-massage/ NITRO_PRESET=github_pages npm run generate
 
 Результат відкривається лише з підкаталогу `/valentyna-massage/`, тож для звичайного `preview` і E2E знову виконайте `npm run generate` без змінних.
 
+### SEO і власний домен
+
+- Власний домен: Settings → Pages → Custom domain. Workflow підхопить його сам (canonical, sitemap, структуровані дані, og:image). Змінювати код не потрібно.
+- Відкрити сайт для пошукових систем: додайте `NUXT_PUBLIC_INDEXABLE: true` у `env` кроку «Generate static site» workflow (або змініть `indexable` у `nuxt.config.ts`). Після деплою додайте сайт у Google Search Console і надішліть `sitemap.xml`.
+
 Оригінали медіа з `assets-originals/` не потрапляють у Git (`.gitignore` лишає лише README). Зберігайте їх окремо. `npm run images` працює лише там, де є оригінали, а готові похідні для сайту лежать у `public/images`.
 
 ## Документація

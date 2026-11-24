@@ -1,3 +1,11 @@
+// Прихований стан блоків до появи. Атрибут data-revealed ставить useTextReveal (атрибут, а не клас,
+// щоб Vue не стер його при оновленні :class). З reduced motion правило не діє — усе видно одразу.
+@media (prefers-reduced-motion: no-preference) {
+  .reveal-ready [data-text-reveal]:not([data-revealed]) {
+    opacity: 0;
+  }
+}
+
 .text-reveal {
   &--intro {
     @media (prefers-reduced-motion: no-preference) {

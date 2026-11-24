@@ -118,17 +118,18 @@
       ref="dialog"
       class="reviews__dialog"
       :aria-label="`${reviewsContent.dotLabel} ${activeIndex + 1}`"
+      @cancel.prevent="close"
       @close="restore"
       @click="backdrop"
       @keydown.left.prevent="navigate(-1)"
       @keydown.right.prevent="navigate(1)"
     >
+      <!-- Як у сертифікатах: зображення на всю панель, хрестик зверху, стрілки по центру. -->
       <picture
         v-if="active"
+        ref="expanded"
         class="reviews__expanded"
-        @pointerdown="swipeStart"
-        @pointerup="swipeEnd"
-        @pointercancel="swipe = null"
+        :style="[{ '--review-ratio': active.width / active.height }, swipeStyle]"
       >
         <source
           type="image/avif"
@@ -139,6 +140,7 @@
           :alt="active.imageAlt"
           :width="active.width"
           :height="active.height"
+          draggable="false"
         />
       </picture>
       <button
@@ -146,7 +148,7 @@
         type="button"
         autofocus
         :aria-label="reviewsContent.closeLabel"
-        @click="dialog?.close()"
+        @click="close"
       >
         <svg
           viewBox="0 0 24 24"
@@ -155,33 +157,32 @@
           <path d="m6 6 12 12M18 6 6 18" />
         </svg>
       </button>
-      <div class="reviews__modal-controls">
-        <button
-          type="button"
-          :aria-label="reviewsContent.previousLabel"
-          @click="navigate(-1)"
+      <button
+        class="reviews__modal-nav reviews__modal-nav--previous"
+        type="button"
+        :aria-label="reviewsContent.previousLabel"
+        @click="navigate(-1)"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
         >
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path d="m14 6-6 6 6 6" />
-          </svg>
-        </button>
-        <span aria-live="polite">{{ activeIndex + 1 }} / {{ items.length }}</span>
-        <button
-          type="button"
-          :aria-label="reviewsContent.nextLabel"
-          @click="navigate(1)"
+          <path d="m14 6-6 6 6 6" />
+        </svg>
+      </button>
+      <button
+        class="reviews__modal-nav reviews__modal-nav--next"
+        type="button"
+        :aria-label="reviewsContent.nextLabel"
+        @click="navigate(1)"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          aria-hidden="true"
         >
-          <svg
-            viewBox="0 0 24 24"
-            aria-hidden="true"
-          >
-            <path d="m10 6 6 6-6 6" />
-          </svg>
-        </button>
-      </div>
+          <path d="m10 6 6 6-6 6" />
+        </svg>
+      </button>
     </dialog>
   </section>
 </template>
@@ -190,7 +191,6 @@
 import emblaCarouselVue from 'embla-carousel-vue';
 import { reviews, reviewsContent } from '~/data/reviews';
 import type { Review } from '~/types/content';
-import { swipeDirection } from '~/utils/swipeDirection';
 
 const items = reviews.filter((item) => item.publicationApproved);
 const baseURL = useRuntimeConfig().app.baseURL;
@@ -227,28 +227,69 @@ const sizes =
 const sources = (item: Review, format: 'avif' | 'webp'): string =>
   [480, 800].map((width) => `${baseURL}${item.imageBase}-${width}.${format} ${width}w`).join(', ');
 const dialog = useTemplateRef<HTMLDialogElement>('dialog');
+const expanded = ref<HTMLElement | null>(null);
 const activeIndex = ref(0);
 const active = ref<Review | null>(null);
 let trigger: HTMLElement | null = null;
 let disposed = false;
+let closing = false;
+let animation: Animation | null = null;
+// Відкриття «з картки» й закриття — як у сертифікатів.
 const open = async (event: MouseEvent, index: number): Promise<void> => {
   if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || !dialog.value) return;
   event.preventDefault();
+  if (dialog.value.open) return;
   trigger = event.currentTarget as HTMLElement;
+  const origin = trigger.getBoundingClientRect();
   activeIndex.value = index;
   active.value = items[index] ?? null;
   await nextTick();
-  if (!disposed) dialog.value?.showModal();
+  if (disposed || !dialog.value) return;
+  dialog.value.showModal();
+  const target = dialog.value.getBoundingClientRect();
+  if (!reduced.value)
+    animation = dialog.value.animate(
+      [
+        {
+          opacity: 0,
+          transform: `translate(${origin.x + origin.width / 2 - target.x - target.width / 2}px, ${origin.y + origin.height / 2 - target.y - target.height / 2}px) scale(.3)`,
+        },
+        { opacity: 1, transform: 'none' },
+      ],
+      { duration: 560, easing: 'cubic-bezier(.22,1,.36,1)' },
+    );
 };
 const restore = (): void => {
   active.value = null;
   trigger?.focus({ preventScroll: true });
   trigger = null;
+  closing = false;
 };
 const navigate = (direction: number): void => {
+  if (!active.value || closing) return;
   activeIndex.value = (activeIndex.value + direction + items.length) % items.length;
   active.value = items[activeIndex.value] ?? null;
   api.value?.scrollTo(activeIndex.value, reduced.value);
+  slideIn(direction);
+};
+// Свайп ліворуч / праворуч: дотик або перетягування мишею.
+const { slideIn, swipeStyle } = useSwipeNavigation(expanded, (direction) => navigate(direction));
+const close = async (): Promise<void> => {
+  if (!dialog.value?.open || closing) return;
+  closing = true;
+  animation?.cancel();
+  if (!reduced.value) {
+    animation = dialog.value.animate(
+      [
+        { opacity: 1, transform: 'none' },
+        { opacity: 0, transform: 'translateY(12px) scale(.96)' },
+      ],
+      { duration: 230, easing: 'ease-in', fill: 'forwards' },
+    );
+    await animation.finished.catch(() => {});
+  }
+  dialog.value?.close();
+  animation?.cancel();
 };
 const backdrop = (event: MouseEvent): void => {
   if (!dialog.value || event.target !== dialog.value) return;
@@ -259,25 +300,11 @@ const backdrop = (event: MouseEvent): void => {
     event.clientY < r.top ||
     event.clientY > r.bottom
   )
-    dialog.value.close();
-};
-let swipe: { id: number; x: number; y: number } | null = null;
-const swipeStart = (event: PointerEvent): void => {
-  if (event.pointerType !== 'mouse' && event.isPrimary)
-    swipe = { id: event.pointerId, x: event.clientX, y: event.clientY };
-};
-const swipeEnd = (event: PointerEvent): void => {
-  if (!swipe || event.pointerId !== swipe.id) return;
-  const direction = swipeDirection(
-    event.clientX - swipe.x,
-    event.clientY - swipe.y,
-    window.visualViewport?.scale ?? 1,
-  );
-  swipe = null;
-  if (direction) navigate(direction);
+    void close();
 };
 onBeforeUnmount(() => {
   disposed = true;
+  animation?.cancel();
   api.value?.off('select', update).off('reInit', update);
   if (dialog.value?.open) dialog.value.close();
 });
@@ -379,8 +406,7 @@ onBeforeUnmount(() => {
     white-space: nowrap;
   }
 
-  &__controls,
-  &__modal-controls {
+  &__controls {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -389,7 +415,7 @@ onBeforeUnmount(() => {
   }
 
   &__controls > button,
-  &__modal-controls button,
+  &__modal-nav,
   &__close {
     display: grid;
     place-items: center;
@@ -400,6 +426,12 @@ onBeforeUnmount(() => {
     border-radius: 50%;
     background: var(--color-content-background);
     color: var(--color-button);
+    transition:
+      background-color 350ms ease,
+      color 350ms ease;
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
     @media (hover: hover) {
       &:hover:not(:disabled) {
         background: var(--color-button);
@@ -445,36 +477,78 @@ onBeforeUnmount(() => {
     }
   }
 
+  // Збільшений перегляд — у стилі діалогу сертифікатів: подвійна рамка, темніше тло,
+  // хрестик справа зверху й стрілки по центру зображення, без нижньої панелі.
   &__dialog {
-    width: min(calc(100vw - 2rem), calc(80svh * 1320 / 2346));
+    width: max-content;
     max-width: calc(100vw - 2rem);
-    max-height: calc(100svh - 2rem);
+    max-height: calc(100dvh - 2rem);
     padding: 0;
-    border: 1px solid var(--color-border-strong);
-    border-radius: var(--radius-md);
+    overflow: visible;
+    border: 2px solid #c9a982;
+    border-radius: 6px;
     background: var(--color-card);
     color: var(--color-text);
+    box-shadow:
+      inset 0 0 0 1px var(--color-button),
+      0 24px 80px rgb(30 20 13 / 45%);
+
     &::backdrop {
-      background: rgb(30 20 13 / 75%);
+      background: rgb(30 20 13 / 78%);
     }
   }
 
   &__expanded {
+    position: relative;
     display: block;
+    width: min(calc(100vw - 2rem - 4px), calc((100dvh - 2rem - 4px) * var(--review-ratio)));
+    aspect-ratio: var(--review-ratio);
+    // Горизонтальний рух іде в обробник свайпу; вертикальна прокрутка й зум — нативні.
     touch-action: pan-y pinch-zoom;
+    cursor: grab;
+    user-select: none;
+    -webkit-user-select: none;
+    transition:
+      transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 260ms ease;
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
+
     & img {
+      display: block;
       width: 100%;
-      height: auto;
+      height: 100%;
+      border-radius: 3px;
+      object-fit: contain;
     }
   }
 
   &__close {
     position: absolute;
+    z-index: 1;
     top: 0.5rem;
     right: 0.5rem;
   }
-  &__modal-controls {
-    padding: 0.5rem;
+
+  &__modal-nav {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    transform: translateY(-50%);
+
+    &--previous {
+      left: 0.5rem;
+    }
+
+    &--next {
+      right: 0.5rem;
+    }
   }
 }
 </style>

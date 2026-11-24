@@ -61,12 +61,14 @@
           class="hero__title text-reveal text-reveal--intro"
           style="--text-reveal-delay: 120ms"
         >
-          <span
+          <!-- Пробіл між рядками, щоб текст заголовка читався як «турботою про», а не «турботоюпро». -->
+          <template
             v-for="line in heroContent.title"
             :key="line"
           >
-            {{ line }}
-          </span>
+            <span>{{ line }}</span>
+            {{ ' ' }}
+          </template>
         </h1>
         <p
           class="hero__description text-reveal text-reveal--intro"

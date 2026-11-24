@@ -46,12 +46,20 @@ const certificateJobs = [
 
 /** @type {{ master: string; quality: { avif: number; webp: number }; flop?: boolean;
  *  variants: { name: string; width?: number; box?: number; crop?: sharp.Region;
- *  skipWebp?: boolean }[] }[]} */
+ *  skipWebp?: boolean; jpegQuality?: number }[] }[]} */
 const jobs = [
   {
     master: 'assets-originals/studio/studio-hero-clarity-ai-v1.png',
     quality: quality.hero,
     variants: [
+      // Зображення для соцмереж і месенджерів (og:image): кабінет із банера, 1200×630, лише JPEG,
+      // бо WebP/AVIF підтримують не всі сервіси прев’ю. Кроп 1672×878 по центру висоти.
+      {
+        name: 'og-cabinet',
+        crop: { left: 0, top: 31, width: 1672, height: 878 },
+        width: 1200,
+        jpegQuality: 86,
+      },
       { name: 'studio-hero-clarity-v1-1672', width: 1672 },
       { name: 'studio-hero-clarity-v1-1280', width: 1280 },
       // Вертикальний mobile-crop; координати збігаються з JPEG і з позиціями гірлянди.
@@ -145,6 +153,15 @@ for (const job of jobs) {
       }
       return image;
     };
+
+    if (variant.jpegQuality) {
+      await pipeline()
+        .resize({ width: variant.width, height: 630, fit: 'cover' })
+        .jpeg({ quality: variant.jpegQuality, mozjpeg: true })
+        .toFile(`${base}.jpg`);
+      console.log(`${variant.name}: jpg ${kb((await stat(`${base}.jpg`)).size)}`);
+      continue;
+    }
 
     await pipeline().avif({ quality: job.quality.avif, effort: 6 }).toFile(`${base}.avif`);
     if (!variant.skipWebp) {

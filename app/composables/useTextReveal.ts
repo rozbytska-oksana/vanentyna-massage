@@ -17,14 +17,22 @@ export const useTextReveal = (root: Readonly<Ref<HTMLElement | null>>): void => 
 
   const start = (): void => {
     stop();
+    const html = document.documentElement;
     if (
       !root.value ||
       motionQuery?.matches ||
       typeof window.IntersectionObserver !== 'function' ||
       typeof Element.prototype.animate !== 'function'
     ) {
+      // Без анімацій нічого не приховуємо: при перемиканні на reduced motion блоки лишаються
+      // видимими й не зникнуть, якщо анімації знову ввімкнуть.
+      root.value
+        ?.querySelectorAll<HTMLElement>('[data-text-reveal]')
+        .forEach((element) => (element.dataset.revealed = ''));
+      if (!motionQuery?.matches) html.classList.remove('reveal-ready');
       return;
     }
+    html.classList.add('reveal-active');
 
     observer = new IntersectionObserver(
       (entries) => {
@@ -47,8 +55,9 @@ export const useTextReveal = (root: Readonly<Ref<HTMLElement | null>>): void => 
               element.dataset.textReveal === 'zoom'
                 ? { opacity: 0, transform: 'scale(0.96)' }
                 : { opacity: 0, transform: `translateY(${distance})` };
-            // Клас дозволяє CSS запускати вкладені ефекти (лінії орнаменту, лічильники).
-            element.classList.add('is-revealed');
+            // Атрибут знімає прихований стан і запускає вкладені CSS-ефекти (лінії орнаменту).
+            // Анімація стартує в тому ж кадрі з opacity 0, тож блок не блимає.
+            element.dataset.revealed = '';
 
             try {
               const animation = element.animate([from, { opacity: 1, transform: 'none' }], {

@@ -39,7 +39,7 @@ test('анімації: поява блоків і лічильник перев
   const count = section.locator('.advantages__count').first();
   // Прокручуємо до підпису: на mobile секція висока, і центрування лишило б його поза екраном.
   await section.locator('.section-eyebrow').scrollIntoViewIfNeeded();
-  await expect(section.locator('.section-eyebrow')).toHaveClass(/is-revealed/);
+  await expect(section.locator('.section-eyebrow')).toHaveAttribute('data-revealed', '');
   // Лічильник завершується кінцевим числом із заголовка.
   await expect(count).toHaveText(/^\d+$/);
   await expect(section.locator('h3').first()).toHaveText(/^\d+ (рік|роки|років) досвіду$/);
@@ -50,7 +50,29 @@ test('анімації: поява блоків і лічильник перев
   await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto('/');
   await section.locator('.section-eyebrow').scrollIntoViewIfNeeded();
-  // Без анімацій контент одразу видимий, класи появи не додаються, число одразу кінцеве.
-  await expect(section.locator('.is-revealed')).toHaveCount(0);
+  // Без анімацій контент одразу видимий (не прихований до появи), число одразу кінцеве.
+  const opacities = await section
+    .locator('[data-text-reveal]')
+    .evaluateAll((elements) => elements.map((element) => getComputedStyle(element).opacity));
+  expect(opacities.every((opacity) => opacity === '1')).toBe(true);
   await expect(section.locator('h3').first()).toHaveText(/^[1-9]\d* (рік|роки|років) досвіду$/);
+});
+
+test('поява без «стрибка»: блок нижче екрана прихований до прокрутки, потім проявляється', async ({
+  page,
+}) => {
+  await page.emulateMedia({ reducedMotion: 'no-preference' });
+  const response = await page.goto('/');
+  // Клас ставиться inline-скриптом у <head> ще до відмальовування body.
+  expect((await response?.text()) ?? '').toContain("classList.add('reveal-ready')");
+  await expect(page.locator('html')).toHaveClass(/reveal-ready/);
+
+  const title = page.locator('#faq-title');
+  const opacity = (): Promise<string> =>
+    title.evaluate((element) => getComputedStyle(element).opacity);
+  // До прокрутки блок не видимий (а не видимий-потім-зниклий).
+  expect(await opacity()).toBe('0');
+  await title.scrollIntoViewIfNeeded();
+  await expect(title).toHaveAttribute('data-revealed', '');
+  await expect.poll(opacity, { timeout: 5000 }).toBe('1');
 });

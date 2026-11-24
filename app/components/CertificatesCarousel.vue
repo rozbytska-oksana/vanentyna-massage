@@ -110,15 +110,11 @@
     >
       <figure
         v-if="active"
+        ref="expanded"
         class="certificates__expanded"
         tabindex="-1"
         autofocus
-        :style="{ '--certificate-ratio': active.width / active.height }"
-        @pointerdown="onSwipeStart"
-        @pointerup="onSwipeEnd"
-        @pointercancel="onSwipeCancel"
-        @touchstart.passive="onTouchStart"
-        @touchmove="onSwipeMove"
+        :style="[{ '--certificate-ratio': active.width / active.height }, swipeStyle]"
       >
         <img
           class="certificates__preview"
@@ -195,7 +191,6 @@ import { certificatesContent } from '~/data/about';
 import type { Certificate } from '~/types/content';
 import { useCarouselImages } from '~/composables/useCarouselImages';
 import { useReducedMotion } from '~/composables/useReducedMotion';
-import { firstMoveIsHorizontal, swipeDirection } from '~/utils/swipeDirection';
 
 const props = defineProps<{ certificates: readonly Certificate[] }>();
 
@@ -292,49 +287,12 @@ const navigate = (direction: number) => {
   previewSrc.value = loadedCardSrc(nextIndex);
   active.value = props.certificates[nextIndex] ?? null;
   api.value?.scrollTo(nextIndex, reduced.value);
+  slideIn(direction);
 };
-// Свайп у діалозі на сенсорних екранах; кнопки й стрілки клавіатури лишаються основними.
-let swipe: { id: number; x: number; y: number } | null = null;
-const onSwipeStart = (event: PointerEvent) => {
-  if (event.pointerType === 'mouse' || !event.isPrimary) return;
-  swipe = { id: event.pointerId, x: event.clientX, y: event.clientY };
-};
-const onSwipeEnd = (event: PointerEvent) => {
-  if (!swipe || event.pointerId !== swipe.id) return;
-  const direction = swipeDirection(
-    event.clientX - swipe.x,
-    event.clientY - swipe.y,
-    window.visualViewport?.scale ?? 1,
-  );
-  swipe = null;
-  if (direction) navigate(direction);
-};
-const onSwipeCancel = () => {
-  swipe = null;
-};
-// Розпізнаний горизонтальний свайп забираємо собі одразу на першому русі (як Embla), щоб
-// вбудовані браузери не сприйняли його як «свайп для закриття». Зум і вертикаль — нативні.
-let touchIntent: { x: number; y: number; horizontal: boolean | null } | null = null;
-const onTouchStart = (event: TouchEvent) => {
-  const touch = event.touches[0];
-  touchIntent =
-    event.touches.length === 1 && touch
-      ? { x: touch.clientX, y: touch.clientY, horizontal: null }
-      : null;
-};
-const onSwipeMove = (event: TouchEvent) => {
-  const touch = event.touches[0];
-  if (!touchIntent || !touch || event.touches.length > 1) {
-    touchIntent = null;
-    return;
-  }
-  if ((window.visualViewport?.scale ?? 1) > 1.01) return;
-  touchIntent.horizontal ??= firstMoveIsHorizontal(
-    touch.clientX - touchIntent.x,
-    touch.clientY - touchIntent.y,
-  );
-  if (touchIntent.horizontal && event.cancelable) event.preventDefault();
-};
+// Свайп ліворуч / праворуч у діалозі (дотик або перетягування мишею); кнопки й стрілки
+// клавіатури лишаються основними.
+const expanded = ref<HTMLElement | null>(null);
+const { slideIn, swipeStyle } = useSwipeNavigation(expanded, (direction) => navigate(direction));
 const close = async () => {
   if (!dialog.value?.open || closing) return;
   closing = true;
@@ -586,8 +544,21 @@ onBeforeUnmount(() => {
     outline: none;
     // Горизонтальний рух іде в обробник свайпу; вертикальна прокрутка й зум — нативні.
     touch-action: pan-y pinch-zoom;
+    cursor: grab;
     user-select: none;
     -webkit-user-select: none;
+    // Після відпускання зображення плавно повертається на місце.
+    transition:
+      transform 260ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 260ms ease;
+
+    &:active {
+      cursor: grabbing;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      transition: none;
+    }
   }
 
   &__expanded img {

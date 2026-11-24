@@ -43,10 +43,12 @@ jobs:
         uses: actions/configure-pages@v5
 
       # base_path — «/<назва-репозиторію>» для project site або порожній рядок для власного домену.
+      # origin — https://<логін>.github.io без шляху; шлях до og:image додає NUXT_APP_BASE_URL.
       - name: Generate static site
         run: npm run generate
         env:
           NUXT_APP_BASE_URL: ${{ steps.pages.outputs.base_path }}/
+          NUXT_PUBLIC_SITE_URL: ${{ steps.pages.outputs.origin }}
           NITRO_PRESET: github_pages
 
       - name: Upload artifact

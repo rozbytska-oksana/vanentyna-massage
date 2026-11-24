@@ -108,3 +108,42 @@ test('кругова карусель не має кінця на mobile, tablet
     );
   }
 });
+
+test('збільшений відгук: стиль сертифікатів, стрілки по центру й свайп', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/#reviews');
+  await expect(page.locator('.reviews__viewport--ready')).toBeVisible();
+  await page.getByRole('link', { name: 'Збільшити відгук 1', exact: true }).click();
+  const dialog = page.locator('.reviews__dialog');
+  await expect(dialog).toHaveAttribute('aria-label', 'Відгук 1');
+  // Без нижньої панелі з лічильником; стрілки — по вертикальному центру зображення.
+  await expect(dialog.locator('.reviews__modal-controls')).toHaveCount(0);
+  await expect(dialog.getByText(/\d+ \/ \d+/)).toHaveCount(0);
+  const image = dialog.locator('.reviews__expanded');
+  const next = dialog.getByRole('button', { name: 'Наступний відгук' });
+  const imageBox = await image.boundingBox();
+  const nextBox = await next.boundingBox();
+  if (!imageBox || !nextBox) throw new Error('Немає розмірів зображення чи стрілки');
+  const center = imageBox.y + imageBox.height / 2;
+  expect(Math.abs(nextBox.y + nextBox.height / 2 - center)).toBeLessThan(2);
+
+  // Свайп ліворуч — наступний, праворуч — попередній.
+  const swipe = async (distance: number): Promise<void> => {
+    const x = imageBox.x + imageBox.width / 2;
+    await page.mouse.move(x, center);
+    await page.mouse.down();
+    await page.mouse.move(x + distance, center, { steps: 10 });
+    await page.mouse.up();
+  };
+  await swipe(-160);
+  await expect(dialog).toHaveAttribute('aria-label', 'Відгук 2');
+  await swipe(160);
+  await expect(dialog).toHaveAttribute('aria-label', 'Відгук 1');
+  await swipe(160);
+  await expect(dialog).toHaveAttribute('aria-label', 'Відгук 6');
+  // Короткий рух не перемикає.
+  await swipe(-20);
+  await expect(dialog).toHaveAttribute('aria-label', 'Відгук 6');
+  await dialog.getByRole('button', { name: 'Закрити відгук' }).click();
+  await expect(dialog).not.toBeVisible();
+});

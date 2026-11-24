@@ -84,14 +84,14 @@ const assetBase = useRuntimeConfig().app.baseURL;
     }
   }
 
-  // Після появи підпису (клас від useTextReveal) лінії «малюються» від знака назовні,
+  // Після появи підпису (атрибут data-revealed від useTextReveal) лінії «малюються» від знака назовні,
   // а знак м’яко проявляється. Без JS чи з reduced motion орнамент одразу видимий.
   @media (prefers-reduced-motion: no-preference) {
-    &.is-revealed &__ornament::before {
+    &[data-revealed] &__ornament::before {
       animation: section-eyebrow-line 1200ms var(--menu-easing) 250ms backwards;
     }
 
-    &.is-revealed &__ornament::after {
+    &[data-revealed] &__ornament::after {
       animation: section-eyebrow-mark 900ms ease 150ms backwards;
     }
   }

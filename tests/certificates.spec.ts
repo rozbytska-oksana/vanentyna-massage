@@ -80,3 +80,26 @@ test('перегляд сертифіката: клавіатура, стріл�
   await expect(dialog).not.toBeVisible();
   await expect(frames.nth(1)).toBeFocused();
 });
+
+test('збільшений сертифікат перемикається свайпом', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto('/#certificates');
+  await expect(page.locator('.certificates__viewport--ready')).toHaveCount(1);
+  await page.locator('.certificates__frame').first().click();
+  const dialog = page.locator('.certificates__dialog');
+  await expect(dialog).toHaveAttribute('aria-label', new RegExp(`^${order[0]}`));
+  const box = await dialog.locator('.certificates__expanded').boundingBox();
+  if (!box) throw new Error('Немає розмірів сертифіката');
+  const x = box.x + box.width / 2;
+  const y = box.y + box.height / 2;
+  const swipe = async (distance: number): Promise<void> => {
+    await page.mouse.move(x, y);
+    await page.mouse.down();
+    await page.mouse.move(x + distance, y, { steps: 10 });
+    await page.mouse.up();
+  };
+  await swipe(-160);
+  await expect(dialog).toHaveAttribute('aria-label', new RegExp(`^${order[1]}`));
+  await swipe(160);
+  await expect(dialog).toHaveAttribute('aria-label', new RegExp(`^${order[0]}`));
+});
