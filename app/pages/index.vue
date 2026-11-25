@@ -5,6 +5,7 @@
       <HeroSection @book="bookingDialog?.open()" />
       <ServicesSection @book="bookingDialog?.open()" />
       <AboutSection />
+      <ProcessSection />
       <AdvantagesSection />
       <ReviewsSection />
       <FaqSection />

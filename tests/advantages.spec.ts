@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-test('переваги: після «Про мене», шість пунктів, цифри з даних сайту', async ({ page }) => {
+test('переваги: після відеоблоку, шість пунктів, цифри з даних сайту', async ({ page }) => {
   await page.emulateMedia({ reducedMotion: 'reduce' });
   const response = await page.goto('/#advantages');
   const html = (await response?.text()) ?? '';
@@ -9,7 +9,7 @@ test('переваги: після «Про мене», шість пункті�
   const order = await page
     .locator('main > section')
     .evaluateAll((sections) => sections.map((section) => section.id));
-  expect(order.indexOf('advantages')).toBe(order.indexOf('about') + 1);
+  expect(order.indexOf('advantages')).toBe(order.indexOf('process') + 1);
 
   const section = page.locator('#advantages');
   await expect(section.getByRole('heading', { level: 2 })).toHaveText('Чому саме я');
