@@ -4,6 +4,7 @@
     ref="section"
     class="process"
     aria-labelledby="process-title"
+    tabindex="-1"
   >
     <div class="process__inner">
       <header class="process__heading">

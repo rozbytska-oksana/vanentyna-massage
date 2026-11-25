@@ -316,7 +316,6 @@ onBeforeUnmount(() => {
 .reviews {
   padding-block: clamp(1.5rem, 3vw, 2.5rem) clamp(1rem, 2vw, 1.5rem);
   font-family: var(--font-hero-body);
-  scroll-margin-block-start: var(--space-md);
 
   &__inner {
     width: min(100% - 2 * var(--space-page), var(--container-content));

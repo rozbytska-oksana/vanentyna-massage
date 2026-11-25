@@ -114,7 +114,6 @@ onBeforeUnmount(() => {
 .advantages {
   padding-block: clamp(2.5rem, 5vw, 4.5rem);
   font-family: var(--font-hero-body);
-  scroll-margin-block-start: var(--space-md);
 
   &__inner {
     width: min(100% - 2 * var(--space-page), var(--container-content));

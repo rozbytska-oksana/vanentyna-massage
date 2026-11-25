@@ -116,7 +116,6 @@ useTextReveal(section);
   // Однакові відступи зверху й знизу; рушники лишаються фоном під контентом.
   padding: 3rem var(--space-page);
   background: #ead9c8;
-  scroll-margin-top: 1rem;
 
   @include bp.medium {
     min-height: 25rem;

@@ -12,19 +12,11 @@
             :key="item.id"
           >
             <a
-              v-if="item.href"
               :href="item.href"
               class="site-header__link"
             >
               {{ item.label }}
             </a>
-            <span
-              v-else
-              aria-disabled="true"
-              :title="headerContent.soonLabel"
-            >
-              {{ item.label }}
-            </span>
           </li>
         </ul>
       </nav>
@@ -105,21 +97,12 @@
               {{ String(index + 1).padStart(2, '0') }}
             </span>
             <a
-              v-if="item.href"
               class="site-header__link"
               :href="item.href"
               @click="navigateFromMenu($event, item.href)"
             >
               {{ item.label }}
             </a>
-            <span
-              v-else
-              class="site-header__mobile-soon"
-              aria-disabled="true"
-            >
-              {{ item.label }}
-              <small>{{ headerContent.soonLabel }}</small>
-            </span>
           </li>
         </ul>
       </nav>
@@ -330,11 +313,6 @@ onScopeDispose(() => {
     padding: 0;
     list-style: none;
     font-size: 1.0625rem;
-
-    span {
-      white-space: nowrap;
-      cursor: default;
-    }
   }
 
   &__link {
@@ -482,22 +460,6 @@ onScopeDispose(() => {
     font-weight: 500;
     letter-spacing: 0.12em;
     font-variant-numeric: tabular-nums;
-  }
-
-  &__mobile-soon {
-    display: inline-flex;
-    align-items: baseline;
-    gap: 0.75rem;
-    color: var(--color-text-muted);
-    cursor: default;
-
-    small {
-      color: var(--color-accent);
-      font-family: var(--font-hero-body);
-      font-size: 0.8125rem;
-      letter-spacing: 0.14em;
-      text-transform: uppercase;
-    }
   }
 
   &__mobile-footer {

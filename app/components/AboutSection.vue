@@ -133,7 +133,6 @@ useTextReveal(section);
 .about {
   padding-block: clamp(3rem, 6vw, 6rem);
   font-family: var(--font-hero-body);
-  scroll-margin-block-start: var(--space-md);
 
   // Заголовок секції в стилі «Послуги та ціни»: підпис з орнаментом і великий Cormorant по центру.
   &__header {

@@ -44,6 +44,8 @@ import { footerContent } from '~/data/contacts';
   }
 
   &__credit {
+    // Окремий простір для фіксованої кнопки 3rem та проміжку біля неї.
+    margin-inline-end: calc(4rem + env(safe-area-inset-right));
     color: inherit;
     font-size: 1rem;
 

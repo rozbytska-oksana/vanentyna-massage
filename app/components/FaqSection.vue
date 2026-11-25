@@ -82,7 +82,6 @@ useTextReveal(section);
   font-family: var(--font-hero-body);
   // Дозволяє плавно анімувати висоту до auto там, де браузер це підтримує.
   interpolate-size: allow-keywords;
-  scroll-margin-block-start: var(--space-md);
 
   @media (prefers-reduced-motion: reduce) {
     --faq-duration: 0ms;

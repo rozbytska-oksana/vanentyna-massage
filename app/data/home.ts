@@ -5,15 +5,13 @@ export const headerContent = {
   navigationLabel: 'Головна навігація',
   menuLabel: 'Відкрити меню',
   closeLabel: 'Закрити меню',
-  soonLabel: 'готується',
   backToTopLabel: 'Нагору',
   bookingLabel: 'Записатися',
   navigation: [
     { id: 'services', label: 'Послуги', href: '#services' },
     { id: 'about', label: 'Про мене', href: '#about' },
-    // Розділів відео й відгуків ще немає: пункти показуються з позначкою «готується», без посилань.
-    { id: 'video', label: 'Відео', href: null },
-    { id: 'reviews', label: 'Відгуки', href: null },
+    { id: 'video', label: 'Відео', href: '#process' },
+    { id: 'reviews', label: 'Відгуки', href: '#reviews' },
     { id: 'contacts', label: 'Контакти', href: '#contacts' },
   ],
 } as const;

@@ -133,6 +133,10 @@ test('адаптивне меню доступне з клавіатури', asy
     await page.keyboard.press('Tab');
     await expect(menu.getByRole('link', { name: 'Про мене', exact: true })).toBeFocused();
     await page.keyboard.press('Tab');
+    await expect(menu.getByRole('link', { name: 'Відео', exact: true })).toBeFocused();
+    await page.keyboard.press('Tab');
+    await expect(menu.getByRole('link', { name: 'Відгуки', exact: true })).toBeFocused();
+    await page.keyboard.press('Tab');
     await expect(menu.getByRole('link', { name: 'Контакти', exact: true })).toBeFocused();
     // Внизу меню — телефон і канали зв’язку, потім кнопка запису.
     await page.keyboard.press('Tab');
@@ -171,5 +175,52 @@ test('посилання Про мене відкриває секцію та з
   await expect(page.locator('#about')).toBeFocused();
   if (isMobileMenu) {
     await expect(page.getByRole('dialog', { name: 'Головна навігація' })).not.toBeVisible();
+  }
+});
+
+test('пункти Відео й Відгуки ведуть до секцій та закривають мобільне меню', async ({ page }) => {
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  for (const [label, id] of [
+    ['Відео', 'process'],
+    ['Відгуки', 'reviews'],
+  ]) {
+    await page.goto('/');
+    const trigger = page.getByRole('button', { name: 'Відкрити меню', exact: true });
+    const mobile = await trigger.isVisible();
+    if (mobile) await trigger.click();
+    const navigation = page.locator(mobile ? '#mobile-navigation' : '.site-header__navigation');
+    const link = navigation.getByRole('link', { name: label, exact: true });
+    await expect(link).toHaveAttribute('href', `#${id}`);
+    await link.focus();
+    await page.keyboard.press('Enter');
+    await expect(page).toHaveURL(new RegExp(`#${id}$`));
+    await expect(page.locator(`#${id}`)).toBeInViewport();
+    if (mobile) {
+      await expect(page.locator('#mobile-navigation')).not.toBeVisible();
+      await expect(page.locator(`#${id}`)).toBeFocused();
+    }
+  }
+});
+
+test('після переходу з меню верх секції збігається з верхом екрана', async ({ page }) => {
+  for (const reducedMotion of ['reduce', 'no-preference'] as const) {
+    await page.emulateMedia({ reducedMotion });
+    for (const [label, id] of [
+      ['Послуги', 'services'],
+      ['Про мене', 'about'],
+      ['Відео', 'process'],
+      ['Відгуки', 'reviews'],
+    ]) {
+      await page.goto('/');
+      const trigger = page.getByRole('button', { name: 'Відкрити меню', exact: true });
+      if (await trigger.isVisible()) await trigger.click();
+      await page.getByRole('link', { name: label, exact: true }).filter({ visible: true }).click();
+      await expect(page).toHaveURL(new RegExp(`#${id}$`));
+      await expect
+        .poll(async () =>
+          Math.abs(await page.locator(`#${id}`).evaluate((el) => el.getBoundingClientRect().top)),
+        )
+        .toBeLessThanOrEqual(1);
+    }
   }
 });
